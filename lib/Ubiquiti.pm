@@ -86,6 +86,7 @@ our $Board = {
 	'P1E' => 'mFi mPower Mini',
 	'P1U' => 'mFi mPower Mini',
 	'p2N' => 'PicoStation M2',
+	'P2B-400' => 'PowerBeam M2',
 	'P36' => 'PowerBridge M365',
 	'P3E' => 'mFi mPower',
 	'P3U' => 'mFi mPower',
@@ -147,5 +148,22 @@ our $CDP = {
 	16 => sub { 'un3' => unpack "S", shift },
 	20 => sub { 'board2' => shift },
 };
+
+sub parse_version
+{
+	my $str = shift;
+	my $version = {};
+	@$version{ qw( date time ) } = $str =~ m/\.(\d{6})\.(\d{4})$/;
+	$str =~ s/\.(\d{6})\.(\d{4})$//;
+	@$version{ qw( build ) } = $str =~ m/\.(\d+)$/;
+	$str =~ s/\.(\d+)$//;
+	@$version{ qw( board ) } = $str =~ m/^([^\.]+)\./;
+	$str =~ s/^([^\.]+)\.//;
+	print "$str\n";
+	@$version{ qw( chipset ) } = $str =~ m/^(?!v[0-9])([^\.]+)\./;
+	$str =~ s/^(?!v[0-9])([^\.]+)\.//;
+	@$version{ qw( version ) } = $str =~ m/^v(.*)/;
+	return $version;
+}
 
 1;
