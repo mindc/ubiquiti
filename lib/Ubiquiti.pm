@@ -44,6 +44,7 @@ our $Board = {
 	'EdgeSwitch' => 'EdgeSwitch 24 250W',
 	'ERLite-3' => 'EdgeRouter Lite',
 	'ES-24-500W' => 'EdgeSwitch 24 500W',
+	'I5C' => 'IsoStation 5AC',
 	'IWD1U' => 'mFi mDimmer',
 	'IWO2U' => 'mFi mOutlet',
 	'IWS1U' => 'mFi mSwitch',
@@ -136,34 +137,41 @@ our $Board = {
 };
 
 our $CDP = {
-	1 => sub { 'hwaddr' => join ":", unpack "(H2)6", shift },
-	2 => sub { 'hwaddr' => join ":", unpack "(H2)6", shift },
-	3 => sub { 'fwversion' => shift },
-	10 => sub { 'uptime' => unpack "N", shift },
-	11 => sub { 'hostname' => shift },
-	12 => sub { my $board = shift; return ( 'board' => $board, 'board_name' => $Board->{$board} || "*$board" ); },
-	13 => sub { 'ssid' => shift },
-	14 => sub { 'un1' => shift },
-	15 => sub { 'un2' => unpack "N", shift },
-	16 => sub { 'un3' => unpack "S", shift },
-	20 => sub { 'board2' => shift },
+    1 => sub { my $value = shift; return hwaddr => join(":", unpack "(H2)6", $value) },
+    2 => sub {
+        my $value = shift;
+        my $ipaddr = join '.', unpack "x6C*", $value;
+
+        return hwaddr => join(":", unpack "(H2)6", $value), $ipaddr !~ m/^169.254/ ? ( ipaddr => $ipaddr ) : ();
+    },
+    3 => sub { 'fwversion' => shift },
+    10 => sub { 'uptime' => unpack "N", shift },
+    11 => sub { 'hostname' => shift },
+    12 => sub { my $board = shift; return ( 'board' => $board, 'board_name' => $Board->{$board} || "*$board" ); },
+    13 => sub { 'ssid' => shift },
+    14 => sub { -type_14 => unpack "H*", shift },
+    15 => sub { -type_15 => unpack "H*", shift },
+    16 => sub { -type_16 => unpack "H*", shift },
+    19 => sub { 'hwaddr' => join ":", unpack "(H2)6", shift  },
+    20 => sub { 'board_name' => shift },
+    24 => sub { -type_24 => unpack "H*", shift },
 };
 
 sub parse_version
 {
-	my $str = shift;
-	my $version = {};
-	@$version{ qw( date time ) } = $str =~ m/\.(\d{6})\.(\d{4})$/;
-	$str =~ s/\.(\d{6})\.(\d{4})$//;
-	@$version{ qw( build ) } = $str =~ m/\.(\d+)$/;
-	$str =~ s/\.(\d+)$//;
-	@$version{ qw( board ) } = $str =~ m/^([^\.]+)\./;
-	$str =~ s/^([^\.]+)\.//;
-	print "$str\n";
-	@$version{ qw( chipset ) } = $str =~ m/^(?!v[0-9])([^\.]+)\./;
-	$str =~ s/^(?!v[0-9])([^\.]+)\.//;
-	@$version{ qw( version ) } = $str =~ m/^v(.*)/;
-	return $version;
+    my $str = shift;
+    my $version = {};
+    @$version{ qw( date time ) } = $str =~ m/\.(\d{6})\.(\d{4})$/;
+    $str =~ s/\.(\d{6})\.(\d{4})$//;
+    @$version{ qw( build ) } = $str =~ m/\.(\d+)$/;
+    $str =~ s/\.(\d+)$//;
+    @$version{ qw( board ) } = $str =~ m/^([^\.]+)\./;
+    $str =~ s/^([^\.]+)\.//;
+    #print "$str\n";
+    @$version{ qw( chipset ) } = $str =~ m/^(?!v[0-9])([^\.]+)\./;
+    $str =~ s/^(?!v[0-9])([^\.]+)\.//;
+    @$version{ qw( version ) } = $str =~ m/^v(.*)/;
+    return $version;
 }
 
 1;
